@@ -1,148 +1,187 @@
 //Basic Node js application
 
-require("dotenv").config();
+let config = require("dotenv").config();
+let keys = require('./keys');
+let Spotify = require("node-spotify-api");
+let spotify = new Spotify(keys.spotify);
+let Twitter = require("twitter");
+let client = new Twitter(keys.twitter);
+let fs = require('fs');
+let logger = fs.createWriteStream('log.txt', {
+    flags: 'a' // 'a' means appending (old data will be preserved)
+});
 
-var keys = require("./keys")
+let request = require("request");
 
-var moment = require("moment")
-moment().format()
+let command = process.argv[2];
+'use strict';
+let inquirer = require("inquirer");
+switch (command){
 
-var Spotify = require('node-spotify-api');
+    case 'my-tweets' :
 
-var axios = require("axios")
+    logger.write('Appending ' + command + ' command by node js console\n');
+    //show you at leasr the last 20 tweets
+    let params = {
+        q: '#nodejs, #Nodejs', //search query
+        count: 20, //number of tweets to return
+        screen_name: 'nodejs',
+        result_type: 'recent', //shows recent tweets
+        lang: 'en' //language English
+    };
 
-var fs = require("fs");
-
-
-// bandsintown
-var getBand = function(artist){
-    axios.get("https://rest.bandsintown.com/artists/" + artist + "/events?app_id=codingbootcamp").then(function(response){
-      var concertDate = response.data[0].datetime;
-      
-      var concertInfo =
-            `
-      ============================================       
-      Venue: ${response.data[0].venue.name}
-      Venue Location: ${response.data[0].venue.city}, ${response.data[0].venue.country}
-      date of the Event: ${moment(concertDate).format('dddd, MMMM Do YYYY, h:mm:ss a')}
-      ============================================`
-
-      logtxt("CONCERT SEARCHED: "+ artist + concertInfo)
-    //   console.log(concertInfo);
-    })
-}
-
-// spotify
-
-var getArtistNames = function(artist) {
-    return artist.name;
-}
-
-var getSpotify = function(songName) {
-    
-    var spotify = new Spotify(keys.spotify);
-
-    spotify.search({ type: 'track', query: songName }, function(err, data){
-        if (err) {
-            console.log('Error occurred: ' + err);
-            return;
+    client.get('search/tweets', params, function (error, tweets, response) {
+        if (!error) {
+            console.log('--------------------TWITTER REPORT--------------------');
+            for (let i = 0; i < tweets.statuses.length; i++) {
+                let id = { id: tweets.statuses[i].id_str };
+                let text = { text: tweets.statuses[i].text };
+                console.log('recent tweets: ' + id['id'] + 'tweet: ' + text['text']);
+            }
+            console.log('--------------------END TWITTER REPORT--------------------');
+        } else {
+            console.log(error);
+            logger.write('Error ocurred for twitter-api command: ' + err + '\n');
         }
-
-        var songs = data.tracks.items
-        for(var i=0; i<songs.length; i++){
-
-                    var songInfo = 
-            `${i}
-            Artist(s): ${songs[i].artists.map(getArtistNames)}
-            Song Name: ${songs[i].name}
-            Preview Song: ${songs[i].preview_url}
-            Album: ${songs[i].album.name}
-            ==================================================
-            ==================================================`
-            logtxt("SONG SEARCHED: " + songName + songInfo)
-            // console.log(songInfo);
-            
-        }
-    })
-}
-
-
-// movie omdb
-var getMovie = function(movieName) {
-
-    if (!movieName){
-        movieName = "Jurassic Park"
-    }
-
-    axios.get("http://www.omdbapi.com/?t=" + movieName + "&y=&plot=short&apikey=aae53632").then(function(response){
-    var movieInfo =
-   `    
-         ===================================================
-    Title: ${response.data.Title}
-    
-    Year: ${response.data.Year}
-    
-    Rated: ${response.data.Rated}
-    
-    IMDB Rating: ${response.data.imdbRating}
-   
-    Rotten Tomatoes Rating: ${response.data.Ratings[0].Value}
-    
-    Country: ${response.data.Country}
-   
-    Language: ${response.data.Language}
-   
-    Plot: ${response.data.Plot}
-   
-    Actors: ${response.data.Actors}
-    ===================================================`
-    logtxt("MOVIE SEARCHED: " + movieName + movieInfo)
-        // console.log(movieInfo);
-    })
-};
-
-
-var logtxt = function(data) {
-    console.log(data)
-
-    fs.appendFile("log.txt", "\r\n" + data, function (err){
-        if(err){
-            return console.log(err)
-        } 
     });
-}
+    break;
 
-var doWhatItSays = function(){
+case 'spotify-this-song' :
+    
+    logger.write('Appending ' + command + ' command by node js console\n');
+    
+    fs.readFile("random.txt", "utf8", function (error, data) {
+        
+        // If the code experiences any errors it will log the error to the console.
+        if (error) {
+            logger.write('Inside spotify-api debug log: ' + error + '\n');
+            return console.log(error);
+        }
 
-    fs.readFile("random.txt", "utf8", function (err, data) {
-        if(err){
-            return console.log(err)
+        let dataArr = data.split("\n");
+        let song = '';
+        let myArgs = process.argv.slice(2);
+        if (myArgs.length === 1) {
+            song = 'The Sign';
+        }
+        else {
+            song = process.argv.slice(3);
         }
         
-        var dataArr = data.split(",")
-
-        dataDisplay(dataArr[0], dataArr[1])
+        spotify
+            .search({ type: 'track', query: song, limit: 1 })
+            .then(function (data, response) {
+                const element = data.tracks.items[0];
+                console.log('--------------------SPOTIFY REPORT--------------------');
+                console.log('Artist(s): ' + element.album.artists[0].name);
+                console.log("The track name is: " + element.name);
+                console.log('A preview link of the song from Spotify is: ' + element.preview_url);
+                console.log('The album name is: ' + element.album.name);
+                console.log('--------------------END SPOTIFY REPORT--------------------');
+                fs.appendFileSync("random.txt", 'spotify-this-song' + ', ' + '"' + element.name + '"' + "\n");
+            })
+            .catch(function (err) {
+                console.log('Error occurred: ' + err);
+                logger.write('Error ocurred for spotify-this-song command: ' + err + '\n');
+            });
     });
-}
+    break;
 
+case 'movie-this' :
+    logger.write('Appending ' + command + ' command by node js console\n');
 
-var dataDisplay = function(func, parm) {
-    switch (func) {
-        case "concert-this":
-            getBand(parm)
-            break
-        case "spotify-this-song":
-            getSpotify(parm)
-            break
-        case "movie-this":
-            getMovie(parm)
-            break
-        case "do-what-it-says":
-            doWhatItSays()
-            break
-        default:
-            displayDefault("Command not recognized, please try again.") 
+    let info = {};
+    let movies = [];
+
+    inquirer.prompt([
+        {
+            name: "name",
+            type: "list",
+            message: "Enter the movie you want to watch?",
+            choices: movies,
+            filter: function(val) {
+                return val.test(/^[a-zA-Z_\s]+$/);
+            }
+        }
+    ]).then(answers => {
+        console.log(JSON.stringify(answers, null, '  '));
+        movies.forEach(function(track){
+            if (answer.name !== '') {
+                info = {
+                    titles: movies
+                };
+            }
+            else {
+                info = {
+                    titles: 'Mr. Nobody.',
+                    year: 2009
+                };
+            }
+        });
+        console.log('list of songs: ' + tracks)
+
+    }).catch(function(err){
+        console.log(err);
+    });
+
+    let getMovie = () => {
+        let movieName = movieNameRef.value;
+        let url= (`http://www.omdbapi.com/?t=${movieName}&apikey=${key}`);
+    if (queryURL !== '') {
+        request(queryURL, function (error, response, body) {
+            console.log('statusCode:', response.statusCode); // Print the response status code if a response was received  
+            if (error) {
+                logger.write('Error ocurred for movie-this command: ' + error + '\n');
+                return console.error(error);
+            }
+            let movie = JSON.parse(body);
+            
+            console.log('--------------------IMDB REPORT--------------------');
+            // console.log(body);
+            console.log('Title: ' + movie.Title);
+            console.log('Year: ' + movie.Year);
+            console.log('Ranking: ' + movie.imdbRating);
+            console.log('Rooten Tomatoes: ' +  movie.Ratings);
+            console.log('Country(%s) and language(%s)', movie.Country, movie.Language[0]);
+            console.log('Synopsis: ' + movie.Plot);
+            console.log('actors: ', movie.Actors);
+            console.log('--------------------END IMDB REPORT--------------------');
+        });
     }
+    break;
+
+case 'do-what-it-says':
+
+    logger.write('Appending ' + command + ' command by node js console\n');
+
+    let allLines = fs.readFileSync('random.txt').toString().split('\n');
+    console.log('songs: ' + allLines);
+    allLines.forEach(function (item) {
+        let chunk = item.substring(18);
+        song = chunk;
+        console.log('song: ' + song);
+        if (song !== '') {
+            spotify
+                .search({ type: 'track', query: song, limit: 1 })
+                .then(function (data, response) {
+                    const element = data.tracks.items[0];
+                    console.log('--------------------EACH TRACK--------------------');
+                    console.log('Artist(s): ' + element.album.artists[0].name);
+                    console.log("The song's name is: " + element.name);
+                    console.log('A preview link of the song from Spotify is: ' + element.preview_url);
+                    console.log('The album name is: ' + element.album.name);
+                    console.log('--------------------END OF EACH TRACK--------------------');
+                })
+                .catch(function (err) {
+                    console.log('Error occurred: ' + err);
+                    logger.write('Error ocurred for do-what-it-says command: ' + err + '\n');
+                });
+        }
+    });
+    break;
+
+default:
+    console.log('Sorry, we are out of ' + command + '.');
 }
 
-dataDisplay(process.argv[2], process.argv[3]);
+logger.end();
