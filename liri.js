@@ -1,187 +1,186 @@
 //Basic Node js application
 
-let config = require("dotenv").config();
-let keys = require('./keys');
-let Spotify = require("node-spotify-api");
-let spotify = new Spotify(keys.spotify);
-let Twitter = require("twitter");
-let client = new Twitter(keys.twitter);
-let fs = require('fs');
-let logger = fs.createWriteStream('log.txt', {
+require("dotenv").config();
+
+var keys = require('./keys.js');
+var Spotify = require("node-spotify-api");
+var spotify = new Spotify(keys.spotify);
+var Twitter = require("twitter");
+var client = new Twitter(keys.twitter);
+var fs = require('fs');
+var logger = fs.createWriteStream('log.txt', {
     flags: 'a' // 'a' means appending (old data will be preserved)
 });
 
-let request = require("request");
+var request = require("request");
 
-let command = process.argv[2];
+var command = process.argv[2];
 'use strict';
-let inquirer = require("inquirer");
+var inquirer = require("inquirer");
 switch (command){
 
     case 'my-tweets' :
 
-    logger.write('Appending ' + command + ' command by node js console\n');
-    //show you at leasr the last 20 tweets
-    let params = {
-        q: '#nodejs, #Nodejs', //search query
-        count: 20, //number of tweets to return
-        screen_name: 'nodejs',
-        result_type: 'recent', //shows recent tweets
-        lang: 'en' //language English
-    };
+        logger.write('Appending ' + command + ' command by node js console\n');
+        //show you at leasr the last 20 tweets
+        var params = {
+            q: '#nodejs, #Nodejs', //search query
+            count: 20, //number of tweets to return
+            screen_name: 'nodejs',
+            result_type: 'recent', //shows recent tweets
+            lang: 'en' //language English
+        };
 
-    client.get('search/tweets', params, function (error, tweets, response) {
-        if (!error) {
-            console.log('--------------------TWITTER REPORT--------------------');
-            for (let i = 0; i < tweets.statuses.length; i++) {
-                let id = { id: tweets.statuses[i].id_str };
-                let text = { text: tweets.statuses[i].text };
-                console.log('recent tweets: ' + id['id'] + 'tweet: ' + text['text']);
+        client.get('search/tweets', params, function (error, tweets, response) {
+            if (!error) {
+                console.log('--------------------TWITTER REPORT--------------------');
+                for (var i = 0; i < tweets.statuses.length; i++) {
+                    var id = { id: tweets.statuses[i].id_str };
+                    var text = { text: tweets.statuses[i].text };
+                    console.log('recent tweets: ' + id['id'] + 'tweet: ' + text['text']);
+                }
+                console.log('--------------------END TWITTER REPORT--------------------');
+            } else {
+                console.log(error);
+                logger.write('Error ocurred for twitter-api command: ' + err + '\n');
             }
-            console.log('--------------------END TWITTER REPORT--------------------');
-        } else {
-            console.log(error);
-            logger.write('Error ocurred for twitter-api command: ' + err + '\n');
-        }
-    });
-    break;
+        });
+        break;
 
-case 'spotify-this-song' :
-    
-    logger.write('Appending ' + command + ' command by node js console\n');
-    
-    fs.readFile("random.txt", "utf8", function (error, data) {
+    case 'spotify-this-song' :
         
-        // If the code experiences any errors it will log the error to the console.
-        if (error) {
-            logger.write('Inside spotify-api debug log: ' + error + '\n');
-            return console.log(error);
-        }
-
-        let dataArr = data.split("\n");
-        let song = '';
-        let myArgs = process.argv.slice(2);
-        if (myArgs.length === 1) {
-            song = 'The Sign';
-        }
-        else {
-            song = process.argv.slice(3);
-        }
+        logger.write('Appending ' + command + ' command by node js console\n');
         
-        spotify
-            .search({ type: 'track', query: song, limit: 1 })
-            .then(function (data, response) {
-                const element = data.tracks.items[0];
-                console.log('--------------------SPOTIFY REPORT--------------------');
-                console.log('Artist(s): ' + element.album.artists[0].name);
-                console.log("The track name is: " + element.name);
-                console.log('A preview link of the song from Spotify is: ' + element.preview_url);
-                console.log('The album name is: ' + element.album.name);
-                console.log('--------------------END SPOTIFY REPORT--------------------');
-                fs.appendFileSync("random.txt", 'spotify-this-song' + ', ' + '"' + element.name + '"' + "\n");
-            })
-            .catch(function (err) {
-                console.log('Error occurred: ' + err);
-                logger.write('Error ocurred for spotify-this-song command: ' + err + '\n');
-            });
-    });
-    break;
-
-case 'movie-this' :
-    logger.write('Appending ' + command + ' command by node js console\n');
-
-    let info = {};
-    let movies = [];
-
-    inquirer.prompt([
-        {
-            name: "name",
-            type: "list",
-            message: "Enter the movie you want to watch?",
-            choices: movies,
-            filter: function(val) {
-                return val.test(/^[a-zA-Z_\s]+$/);
+        fs.readFile("random.txt", "utf8", function (error, data) {
+            
+            // If the code experiences any errors it will log the error to the console.
+            if (error) {
+                logger.write('Inside spotify-api debug log: ' + error + '\n');
+                return console.log(error);
             }
-        }
-    ]).then(answers => {
-        console.log(JSON.stringify(answers, null, '  '));
-        movies.forEach(function(track){
-            if (answer.name !== '') {
-                info = {
-                    titles: movies
-                };
+
+            let dataArr = data.split("\n");
+            let song = '';
+            let myArgs = process.argv.slice(2);
+            if (myArgs.length === 1) {
+                song = 'The Sign';
             }
             else {
-                info = {
-                    titles: 'Mr. Nobody.',
-                    year: 2009
-                };
+                song = process.argv.slice(3);
             }
-        });
-        console.log('list of songs: ' + tracks)
-
-    }).catch(function(err){
-        console.log(err);
-    });
-
-    let getMovie = () => {
-        let movieName = movieNameRef.value;
-        let url= (`http://www.omdbapi.com/?t=${movieName}&apikey=${key}`);
-    if (queryURL !== '') {
-        request(queryURL, function (error, response, body) {
-            console.log('statusCode:', response.statusCode); // Print the response status code if a response was received  
-            if (error) {
-                logger.write('Error ocurred for movie-this command: ' + error + '\n');
-                return console.error(error);
-            }
-            let movie = JSON.parse(body);
             
-            console.log('--------------------IMDB REPORT--------------------');
-            // console.log(body);
-            console.log('Title: ' + movie.Title);
-            console.log('Year: ' + movie.Year);
-            console.log('Ranking: ' + movie.imdbRating);
-            console.log('Rooten Tomatoes: ' +  movie.Ratings);
-            console.log('Country(%s) and language(%s)', movie.Country, movie.Language[0]);
-            console.log('Synopsis: ' + movie.Plot);
-            console.log('actors: ', movie.Actors);
-            console.log('--------------------END IMDB REPORT--------------------');
-        });
-    }
-    break;
-
-case 'do-what-it-says':
-
-    logger.write('Appending ' + command + ' command by node js console\n');
-
-    let allLines = fs.readFileSync('random.txt').toString().split('\n');
-    console.log('songs: ' + allLines);
-    allLines.forEach(function (item) {
-        let chunk = item.substring(18);
-        song = chunk;
-        console.log('song: ' + song);
-        if (song !== '') {
             spotify
                 .search({ type: 'track', query: song, limit: 1 })
                 .then(function (data, response) {
                     const element = data.tracks.items[0];
-                    console.log('--------------------EACH TRACK--------------------');
+                    console.log('--------------------SPOTIFY REPORT--------------------');
                     console.log('Artist(s): ' + element.album.artists[0].name);
-                    console.log("The song's name is: " + element.name);
+                    console.log("The track name is: " + element.name);
                     console.log('A preview link of the song from Spotify is: ' + element.preview_url);
                     console.log('The album name is: ' + element.album.name);
-                    console.log('--------------------END OF EACH TRACK--------------------');
+                    console.log('--------------------END SPOTIFY REPORT--------------------');
+                    fs.appendFileSync("random.txt", 'spotify-this-song' + ', ' + '"' + element.name + '"' + "\n");
                 })
                 .catch(function (err) {
                     console.log('Error occurred: ' + err);
-                    logger.write('Error ocurred for do-what-it-says command: ' + err + '\n');
+                    logger.write('Error ocurred for spotify-this-song command: ' + err + '\n');
                 });
-        }
-    });
-    break;
+        });
+        break;
 
-default:
-    console.log('Sorry, we are out of ' + command + '.');
+    case 'movie-this' :
+        logger.write('Appending ' + command + ' command by node js console\n');
+
+        var info = {};
+        var movies = [];
+
+        inquirer.prompt([
+            {
+                name: "name",
+                type: "list",
+                message: "Enter the movie you want to watch?",
+                choices: movies,
+                filter: function(val) {
+                    return val.test(/^[a-zA-Z_\s]+$/);
+                }
+            }
+        ]).then(answers => {
+            console.log(JSON.stringify(answers, null, '  '));
+            movies.forEach(function(track){
+                if (answer.name !== '') {
+                    info = {
+                        titles: movies
+                    };
+                }
+                else {
+                    info = {
+                        titles: 'Mr. Nobody.',
+                        year: 2009
+                    };
+                }
+            });
+            console.log('list of songs: ' + tracks)
+
+        }).catch(function(err){
+            console.log(err);
+        });
+
+        var queryURL = `http://www.omdbapi.com/?t=${movieName}&apikey=${key}`;
+        if (queryURL !== '') {
+            request(queryURL, function (error, response, body) {
+                console.log('statusCode:', response.statusCode); // Print the response status code if a response was received  
+                if (error) {
+                    logger.write('Error ocurred for movie-this command: ' + error + '\n');
+                    return console.error(error);
+                }
+                let movie = JSON.parse(body);
+                
+                console.log('--------------------IMDB REPORT--------------------');
+                // console.log(body);
+                console.log('Title: ' + movie.Title);
+                console.log('Year: ' + movie.Year);
+                console.log('Ranking: ' + movie.imdbRating);
+                console.log('Rooten Tomatoes: ' +  movie.Ratings);
+                console.log('Country(%s) and language(%s)', movie.Country, movie.Language[0]);
+                console.log('Synopsis: ' + movie.Plot);
+                console.log('actors: ', movie.Actors);
+                console.log('--------------------END IMDB REPORT--------------------');
+            });
+        }
+        break;
+    
+    case 'do-what-it-says':
+
+        logger.write('Appending ' + command + ' command by node js console\n');
+
+        var allLines = fs.readFileSync('random.txt').toString().split('\n');
+        console.log('songs: ' + allLines);
+        allLines.forEach(function (item) {
+            var chunk = item.substring(18);
+            song = chunk;
+            console.log('song: ' + song);
+            if (song !== '') {
+                spotify
+                    .search({ type: 'track', query: song, limit: 1 })
+                    .then(function (data, response) {
+                        const element = data.tracks.items[0];
+                        console.log('--------------------EACH TRACK--------------------');
+                        console.log('Artist(s): ' + element.album.artists[0].name);
+                        console.log("The song's name is: " + element.name);
+                        console.log('A preview link of the song from Spotify is: ' + element.preview_url);
+                        console.log('The album name is: ' + element.album.name);
+                        console.log('--------------------END OF EACH TRACK--------------------');
+                    })
+                    .catch(function (err) {
+                        console.log('Error occurred: ' + err);
+                        logger.write('Error ocurred for do-what-it-says command: ' + err + '\n');
+                    });
+            }
+        });
+        break;
+
+    default:
+        console.log('Sorry, we are out of ' + command + '.');
 }
 
 logger.end();

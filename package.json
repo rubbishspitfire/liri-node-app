@@ -17,12 +17,7 @@
   },
   "homepage": "https://github.com/rubbishspitfire/liri-node-app#readme",
   "dependencies": {
-    "dot-env": "^0.0.1",
     "dotenv": "^16.0.3",
-    "inquirer": "^9.2.6",
-    "node-spotify-api": "^1.1.1",
-    "request": "^2.88.2",
-    "spotify": "^0.3.0",
-    "twitter": "^1.7.1"
+    "node-spotify-api": "^1.1.1"
   }
 }
