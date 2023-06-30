@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/rubbishspitfire/liri-node-app#readme",
   "dependencies": {
+    "axios": "^1.4.0",
     "dotenv": "^16.0.3",
     "node-spotify-api": "^1.1.1"
   }
